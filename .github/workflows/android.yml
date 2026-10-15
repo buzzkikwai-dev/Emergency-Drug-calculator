@@ -12,25 +12,36 @@ jobs:
 
     defaults:
       run:
-        working-directory: emergency-drug-calc-android (1)/fdroid-app
+        working-directory: "emergency-drug-calc-android (1)/fdroid-app"
 
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build Debug APK
+      - name: Install Gradle 8.7
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          wget https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-8.7/bin" >> "$GITHUB_PATH"
+
+      - name: Verify project files
+        run: |
+          echo "Checking Android project..."
+          ls -la
+          ls -la app
+
+      - name: Build Debug APK
+        run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: emergency-drug-calculator-debug-apk
-          path: emergency-drug-calc-android (1)/fdroid-app/app/build/outputs/apk/debug/*.apk
+          path: "emergency-drug-calc-android (1)/fdroid-app/app/build/outputs/apk/debug/*.apk"
+          if-no-files-found: error
