@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emergency Drug Calculator (Paediatric)</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14181f;--mut:#566070;--line:#d8dde5;--acc:#b3202a;--hi:#fff4f4}
+@media(prefers-color-scheme:dark){:root{--bg:#12151a;--card:#1b2028;--ink:#eef1f5;--mut:#9aa5b5;--line:#2f3743;--acc:#ff6b73;--hi:#2a1b1e}}
+*{box-sizing:border-box;margin:0}
+body{font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);padding-bottom:3rem}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;padding:.8rem 1rem}
+h1{font-size:1.15rem;margin-bottom:.6rem}
+.top{display:grid;grid-template-columns:2fr 1.2fr 1.2fr;gap:.7rem;max-width:980px;margin:auto}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--mut);margin-bottom:.15rem}
+input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:.55rem .65rem;min-height:46px}
+input:focus{outline:3px solid var(--acc);outline-offset:1px}
+#w{font-size:1.4rem;font-weight:700;border-color:var(--acc)}
+#warn{max-width:980px;margin:.5rem auto 0;color:var(--acc);font-weight:600;font-size:.9rem;min-height:1.2em}
+main{max-width:980px;margin:1rem auto;padding:0 1rem}
+h2{font-size:.95rem;margin:1.6rem 0 .5rem;color:var(--acc)}
+.row{display:grid;grid-template-columns:1.5fr 1.1fr 1.4fr;gap:.5rem 1rem;background:var(--card);border:1px solid var(--line);border-top:0;padding:.65rem .9rem;align-items:center}
+.row:first-of-type{border-top:1px solid var(--line);border-radius:8px 8px 0 0}
+.row:last-of-type{border-radius:0 0 8px 8px}
+.row b{display:block}.row small{color:var(--mut)}
+.rule{color:var(--mut);font-size:.9rem}
+.res{font-size:1.2rem;font-weight:700}
+.res small{display:block;font-size:.82rem;font-weight:400;color:var(--mut)}
+.row.note{background:var(--hi)}
+footer{max-width:980px;margin:1.5rem auto;padding:0 1rem;color:var(--mut);font-size:.85rem}
+button{font:inherit;font-weight:700;min-height:44px;padding:.5rem 1.2rem;border:0;border-radius:6px;background:var(--acc);color:#fff;cursor:pointer}
+@media(max-width:700px){.top{grid-template-columns:1fr 1fr}.top>:first-child{grid-column:1/-1}.row{grid-template-columns:1fr 1fr}.row>:first-child{grid-column:1/-1}}
+@media print{header{position:static}button,#warn:empty{display:none}body{background:#fff;color:#000}.row{break-inside:avoid;border-color:#999}input{border:0;border-bottom:1px solid #000;border-radius:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Emergency Drug Calculator</h1>
+  <div class="top">
+    <div><label for="pn">Patient name</label><input id="pn" autocomplete="off"></div>
+    <div><label for="dt">Date</label><input id="dt" type="date"></div>
+    <div><label for="w">Weight (kg)</label><input id="w" type="number" inputmode="decimal" min="0.3" max="100" step="0.1" placeholder="kg"></div>
+  </div>
+  <p id="warn" role="status" aria-live="polite"></p>
+</header>
+<main id="out"></main>
+<footer>
+  <p><button type="button" onclick="window.AndroidPrint?AndroidPrint.print():print()">Print / save as PDF</button></p>
+  <p style="margin-top:.8rem">Based on the STRS Emergency Drug Calculator card (revised 1 Jan 2008, www.strs.nhs.uk, phone 0207 1884500). Drug doses represent average requirements in critically ill children. It is the responsibility of the clinician to ensure drugs are used appropriately according to the clinical situation. Check doses against current local guidelines before use.</p>
+</footer>
+<script>
+function f(x){var n=Math.abs(x),d=n>=100?0:n>=10?1:n>=1?2:3;return String(+x.toFixed(d))}
+function K(k,u,sub){return function(w){return [f(k*w)+" "+u].concat(sub?sub(w):[])}}
+// infusion: amount to add to 50 ml so that 1 ml/hr = rate (per kg per hr) -> amount = rate * kg * 50
+function I(ratePerKgHr,unit,perHrText,div){div=div||1;return function(w){var a=ratePerKgHr*w*50/div;return [f(a)+" "+unit+" in 50 ml NS","1 ml/hr = "+perHrText]}}
+var G=[
+{t:"Resuscitation and emergency drugs",rows:[
+ ["Adrenaline 1:10,000","IV","0.1 ml/kg",K(0.1,"ml")],
+ ["Adenosine","IV","100 mcg/kg, max 500 mcg/kg",function(w){return [f(0.1*w)+" mg","max "+f(0.5*w)+" mg (500 mcg/kg)"]}],
+ ["Atropine 600 mcg/ml","IV","20 mcg/kg, min 100 mcg or 0.16 ml",function(w){var m=20*w,min=m<100;if(min)m=100;return [f(m)+" mcg = "+(min?"0.16":f(m/600))+" ml",min?"minimum dose applied":""]}],
+ ["Sodium bicarbonate 8.4%","IV","1 ml/kg",K(1,"ml")],
+ ["Calcium gluconate 10%","IV","0.5 ml/kg",K(0.5,"ml")],
+ ["Magnesium sulphate (asthma)","IV","40 mg/kg over 20 min",K(40,"mg")],
+ ["Hydrocortisone (add if used)","IVI","2 mg/kg",K(2,"mg")],
+ ["Defibrillation (synchronised)","","1 J/kg",K(1,"J")],
+ ["Defibrillation (asynchronous)","","4 J/kg",K(4,"J")]
+]},
+{t:"Anticonvulsant and CNS drugs",rows:[
+ ["Lorazepam","IV","0.1 mg/kg",K(0.1,"mg")],
+ ["Midazolam","IV","0.1 mg/kg",K(0.1,"mg")],
+ ["Phenytoin","IV","20 mg/kg, first loading dose",K(20,"mg")],
+ ["Phenobarbitone","IV","20 mg/kg, first loading dose",K(20,"mg")],
+ ["Mannitol","IV","0.5 g/kg",K(0.5,"g")],
+ ["Paraldehyde","PR","0.4 ml/kg, use equal volume of oil",K(0.4,"ml",function(w){return ["+ "+f(0.4*w)+" ml oil"]})],
+ ["3% saline","IV","3 ml/kg",K(3,"ml")]
+]},
+{t:"Muscle relaxation and intubation drugs",rows:[
+ ["Suxamethonium","IV","2 mg/kg if under 10 kg, else 1 mg/kg",function(w){return [f((w<10?2:1)*w)+" mg","using "+(w<10?2:1)+" mg/kg"]}],
+ ["Pancuronium","IV","0.1 mg/kg",K(0.1,"mg")],
+ ["Rocuronium","IV","1 mg/kg for rapid intubation",K(1,"mg")],
+ ["Fentanyl","IV","2 mcg/kg, titrate 1 to 5 mcg/kg",K(2,"mcg",function(w){return ["titrate "+f(w)+" to "+f(5*w)+" mcg"]})],
+ ["Ketamine","IV / IM","2 mg/kg IV, 4 mg/kg can be used IM",K(2,"mg IV",function(w){return ["IM: "+f(4*w)+" mg"]})],
+ ["Propofol","IV","5 mg/kg, titrate 2 to 5 mg/kg",K(5,"mg",function(w){return ["titrate "+f(2*w)+" to "+f(5*w)+" mg"]})],
+ ["Etomidate","IV","0.3 mg/kg, titrate 0.1 to 0.4 mg/kg",K(0.3,"mg",function(w){return ["titrate "+f(0.1*w)+" to "+f(0.4*w)+" mg"]})],
+ ["Thiopentone","IV","5 mg/kg, titrate 2 to 5 mg/kg",K(5,"mg",function(w){return ["titrate "+f(2*w)+" to "+f(5*w)+" mg"]})]
+]},
+{t:"Infusions (sedation, inotropes and other useful agents), made up to 50 ml with normal saline",rows:[
+ ["Morphine","IV","1 ml/hr = 20 mcg/kg/hr",I(20,"mg","20 mcg/kg/hr",1000)],
+ ["Dopamine (peripheral)","IV","1 ml/hr = 1 mcg/kg/min",I(60,"mg","1 mcg/kg/min",1000)],
+ ["Dopamine (central)","IV","1 ml/hr = 10 mcg/kg/min",I(600,"mg","10 mcg/kg/min",1000)],
+ ["Adrenaline (central)","IV","1 ml/hr = 0.1 mcg/kg/min",I(6,"mg","0.1 mcg/kg/min",1000)],
+ ["Noradrenaline (central)","IV","1 ml/hr = 0.1 mcg/kg/min",I(6,"mg","0.1 mcg/kg/min",1000)],
+ ["Milrinone","IV","1 ml/hr = 0.5 mcg/kg/min",I(30,"mg","0.5 mcg/kg/min",1000)],
+ ["Prostin","","1 ml/hr = 10 nanogram/kg/min",I(0.6,"mcg","10 nanogram/kg/min")],
+ ["Insulin infusion","","1 ml/hr = 0.05 units/kg/hr",I(0.05,"units","0.05 units/kg/hr")],
+ ["Salbutamol","IV","1 ml/hr = 0.5 mcg/kg/min. If over 10 kg run NEAT salbutamol (1 vial = 0.5 mg/ml)",I(30,"mg","0.5 mcg/kg/min",1000)]
+]}];
+var out=document.getElementById("out"),rows=[];
+G.forEach(function(g){
+  var h=document.createElement("h2");h.textContent=g.t;out.appendChild(h);
+  g.rows.forEach(function(r){
+    var d=document.createElement("div");d.className="row";
+    d.innerHTML="<div><b></b><small></small></div><div class='rule'></div><div class='res' aria-live='off'></div>";
+    d.querySelector("b").textContent=r[0];d.querySelector("small").textContent=r[1];
+    d.querySelector(".rule").textContent=r[2];out.appendChild(d);rows.push([d.querySelector(".res"),r[3]]);
+  });
+});
+var W=document.getElementById("w"),warn=document.getElementById("warn");
+function calc(){
+  var w=parseFloat(W.value),ok=w>0&&w<=100;
+  warn.textContent=!W.value?"":!ok?"Enter a weight between 0.3 and 100 kg.":(w<1||w>50)?"Unusual weight for this card. Check the weight entered.":"";
+  rows.forEach(function(r){
+    var el=r[0];el.textContent="";
+    if(!ok){el.textContent="Enter weight";el.style.fontWeight="400";el.style.color="var(--mut)";return}
+    el.style.fontWeight="";el.style.color="";
+    var v=r[1](w);el.appendChild(document.createTextNode(v[0]));
+    v.slice(1).forEach(function(s){if(!s)return;var m=document.createElement("small");m.textContent=s;el.appendChild(m)});
+  });
+}
+W.addEventListener("input",calc);
+document.getElementById("dt").value=new Date().toISOString().slice(0,10);
+calc();
+</script>
+</body>
+</html>

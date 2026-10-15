@@ -1,0 +1,5 @@
+Enter a child's weight in kilograms and see weight-based doses for resuscitation, anticonvulsant, intubation and infusion drugs. Based on the STRS Emergency Drug Calculator card (revised 2008).
+
+Works fully offline. No ads, no tracking, no network permission.
+
+Drug doses represent average requirements in critically ill children. It is the responsibility of the clinician to ensure drugs are used appropriately according to the clinical situation. Check all doses against current local guidelines before use.
