@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: emergency-drug-calc-android (1)/fdroid-app
+
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
@@ -20,15 +24,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Grant execute permission
-        run: |
-          chmod +x ./gradlew
-
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: emergency-drug-calculator-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: emergency-drug-calc-android (1)/fdroid-app/app/build/outputs/apk/debug/*.apk
